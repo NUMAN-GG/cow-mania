@@ -1,23 +1,11 @@
+import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import MilkSales from './components/MilkSales';
-
-// Protected route component for Admin-only views
-const AdminOnly = ({ children }) => {
-  const { isAdmin, loading } = useAuth();
-
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (!isAdmin) {
-    return (
-      <div className="p-6 text-red-600 font-semibold">
-        Access Denied. This section is restricted to Admins only.
-      </div>
-    );
-  }
-  return children;
-};
+import Lactation from './components/Lactation';
 
 export default function App() {
   const { user, profile, isAdmin, signOut, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState('sales');
 
   if (loading) {
     return (
@@ -27,7 +15,6 @@ export default function App() {
     );
   }
 
-  // Display login prompt if not authenticated
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
@@ -39,7 +26,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Bar */}
+      {/* Header */}
       <header className="bg-slate-800 text-white p-4 flex justify-between items-center shadow-md">
         <div>
           <h1 className="text-xl font-bold">Cow Mania</h1>
@@ -57,21 +44,27 @@ export default function App() {
 
       {/* Navigation Bar */}
       <nav className="bg-white border-b px-4 py-3 flex gap-6 text-sm font-medium text-gray-700">
-        <a href="#sales" className="hover:text-blue-600">Milk Sales</a>
+        <button
+          onClick={() => setActiveTab('sales')}
+          className={`${activeTab === 'sales' ? 'text-blue-600 border-b-2 border-blue-600 font-bold' : 'hover:text-blue-600'}`}
+        >
+          Milk Sales
+        </button>
 
-        {/* Admin-only links */}
         {isAdmin && (
-          <>
-            <a href="#animals" className="hover:text-blue-600">Animals</a>
-            <a href="#lactation" className="hover:text-blue-600">Lactation Logs</a>
-            <a href="#customers" className="hover:text-blue-600">Customers</a>
-          </>
+          <button
+            onClick={() => setActiveTab('lactation')}
+            className={`${activeTab === 'lactation' ? 'text-blue-600 border-b-2 border-blue-600 font-bold' : 'hover:text-blue-600'}`}
+          >
+            Lactation Logs
+          </button>
         )}
       </nav>
 
-      {/* Main Content Area */}
+      {/* Main Views */}
       <main className="p-6 max-w-7xl mx-auto">
-        <MilkSales />
+        {activeTab === 'sales' && <MilkSales />}
+        {activeTab === 'lactation' && isAdmin && <Lactation />}
       </main>
     </div>
   );
