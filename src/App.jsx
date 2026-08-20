@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import MilkSales from './components/MilkSales';
 import Lactation from './components/Lactation';
+import Animals from './components/Animals';
+import Customers from './components/Customers';
 
 export default function App() {
   const { user, profile, isAdmin, signOut, loading } = useAuth();
@@ -26,7 +28,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Top Header */}
       <header className="bg-slate-800 text-white p-4 flex justify-between items-center shadow-md">
         <div>
           <h1 className="text-xl font-bold">Cow Mania</h1>
@@ -42,7 +44,7 @@ export default function App() {
         </button>
       </header>
 
-      {/* Navigation Bar */}
+      {/* Navigation Tabs */}
       <nav className="bg-white border-b px-4 py-3 flex gap-6 text-sm font-medium text-gray-700">
         <button
           onClick={() => setActiveTab('sales')}
@@ -52,19 +54,35 @@ export default function App() {
         </button>
 
         {isAdmin && (
-          <button
-            onClick={() => setActiveTab('lactation')}
-            className={`${activeTab === 'lactation' ? 'text-blue-600 border-b-2 border-blue-600 font-bold' : 'hover:text-blue-600'}`}
-          >
-            Lactation Logs
-          </button>
+          <>
+            <button
+              onClick={() => setActiveTab('animals')}
+              className={`${activeTab === 'animals' ? 'text-blue-600 border-b-2 border-blue-600 font-bold' : 'hover:text-blue-600'}`}
+            >
+              Animals
+            </button>
+            <button
+              onClick={() => setActiveTab('lactation')}
+              className={`${activeTab === 'lactation' ? 'text-blue-600 border-b-2 border-blue-600 font-bold' : 'hover:text-blue-600'}`}
+            >
+              Lactation Logs
+            </button>
+            <button
+              onClick={() => setActiveTab('customers')}
+              className={`${activeTab === 'customers' ? 'text-blue-600 border-b-2 border-blue-600 font-bold' : 'hover:text-blue-600'}`}
+            >
+              Customers
+            </button>
+          </>
         )}
       </nav>
 
-      {/* Main Views */}
+      {/* Content Rendering */}
       <main className="p-6 max-w-7xl mx-auto">
         {activeTab === 'sales' && <MilkSales />}
+        {activeTab === 'animals' && isAdmin && <Animals />}
         {activeTab === 'lactation' && isAdmin && <Lactation />}
+        {activeTab === 'customers' && isAdmin && <Customers />}
       </main>
     </div>
   );
