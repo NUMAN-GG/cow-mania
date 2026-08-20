@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
+import Login from './components/Login';
 import MilkSales from './components/MilkSales';
 import Lactation from './components/Lactation';
 import Animals from './components/Animals';
@@ -11,19 +12,15 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-lg font-medium text-gray-600">Loading Cow Mania...</p>
+      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+        <p className="text-lg font-medium">Loading Cow Mania...</p>
       </div>
     );
   }
 
+  // Render Login Component when not logged in
   if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <h1 className="text-2xl font-bold">Welcome to Cow Mania</h1>
-        <p className="text-gray-500">Please sign in to access your dashboard.</p>
-      </div>
-    );
+    return <Login />;
   }
 
   return (
