@@ -34,13 +34,15 @@ export default function Lactation() {
     setLoading(false);
   };
 
+  // Fetches active female animals giving milk (including pregnant milking cows)
   const fetchAnimals = async () => {
     const { data, error } = await supabase
       .from('animals')
-      .select('id, tag_number, type')
-      .eq('status', 'active');
+      .select('id, tag_number, type, status')
+      .eq('gender', 'female')
+      .not('status', 'in', '("sold","inactive","dry","pregnant_dry")');
 
-    if (error) console.error('Error fetching animals:', error.message);
+    if (error) console.error('Error fetching female animals:', error.message);
     else setAnimals(data || []);
   };
 
@@ -94,17 +96,19 @@ export default function Lactation() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Select Animal</label>
+            <label className="block text-xs font-medium text-slate-300 mb-1">
+              Select Milking Animal
+            </label>
             <select
               value={formData.animal_id}
               onChange={(e) => setFormData({ ...formData, animal_id: e.target.value })}
               required
               className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
             >
-              <option value="">Choose Tag Number</option>
+              <option value="">-- Choose Tag Number --</option>
               {animals.map((a) => (
                 <option key={a.id} value={a.id}>
-                  Tag: {a.tag_number} ({a.type})
+                  Tag: {a.tag_number} ({a.type} {a.status === 'pregnant_milking' ? '- Pregnant' : ''})
                 </option>
               ))}
             </select>
