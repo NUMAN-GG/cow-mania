@@ -1,30 +1,35 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+
 const todayLocal = () => {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().split('T')[0];
-}
+};
+
+const emptyForm = () => ({
+  animal_id: '',
+  date: todayLocal(),
+  session: 'morning',
+  yield_liters: '',
+});
+
+const inputClass =
+  'w-full bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none transition';
+const labelClass = 'block text-xs font-medium text-slate-300 mb-1';
+
 export default function Lactation() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, canView } = useAuth();
   const [logs, setLogs] = useState([]);
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [formData, setFormData] = useState({
-    animal_id: '',
-    date: todayLocal(),
-    session: 'morning',
-    yield_liters: ''
-  });
+  const [formData, setFormData] = useState(emptyForm);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchLogs();
-      fetchAnimals();
-    }
-  }, [isAdmin]);
+    if (canView) fetchLogs();
+    if (isAdmin) fetchAnimals();
+  }, [canView, isAdmin]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -38,7 +43,7 @@ export default function Lactation() {
     setLoading(false);
   };
 
-  // Fetches active female animals giving milk (including pregnant milking cows)
+  // Active female animals that are giving milk (including pregnant milking)
   const fetchAnimals = async () => {
     const { data, error } = await supabase
       .from('animals')
@@ -59,27 +64,22 @@ export default function Lactation() {
         animal_id: formData.animal_id,
         date: formData.date,
         session: formData.session,
-        yield_liters: parseFloat(formData.yield_liters)
-      }
+        yield_liters: parseFloat(formData.yield_liters),
+      },
     ]);
 
     if (error) {
       alert('Error adding lactation log: ' + error.message);
     } else {
-      setFormData({
-        animal_id: '',
-        date: todayLocal(),
-        session: 'morning',
-        yield_liters: ''
-      });
+      setFormData(emptyForm());
       fetchLogs();
     }
   };
 
-  if (!isAdmin) {
+  if (!canView) {
     return (
       <div className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-400 text-sm font-semibold">
-        Access Denied. Only admins can access lactation logs.
+        Access Denied. You do not have permission to view lactation logs.
       </div>
     );
   }
@@ -87,83 +87,87 @@ export default function Lactation() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-8000 flex items-center gap-2">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
           <span>🥛</span> Lactation Logs
         </h2>
       </div>
 
-      {/* Add Log Form */}
-      <form onSubmit={handleAddLog} className="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
-        <h3 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">
-          Log Daily Yield
-        </h3>
+      {/* Add Log Form (admin only) */}
+      {isAdmin && (
+        <form
+          onSubmit={handleAddLog}
+          className="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4"
+        >
+          <h3 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">
+            Log Daily Yield
+          </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Select Milking Animal
-            </label>
-            <select
-              value={formData.animal_id}
-              onChange={(e) => setFormData({ ...formData, animal_id: e.target.value })}
-              required
-              className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className={labelClass}>Select Milking Animal</label>
+              <select
+                value={formData.animal_id}
+                onChange={(e) => setFormData({ ...formData, animal_id: e.target.value })}
+                required
+                className={inputClass}
+              >
+                <option value="">-- Choose Tag Number --</option>
+                {animals.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    Tag: {a.tag_number} ({a.type}
+                    {a.status === 'pregnant_milking' ? ' - Pregnant' : ''})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className={labelClass}>Date</label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Session</label>
+              <select
+                value={formData.session}
+                onChange={(e) => setFormData({ ...formData, session: e.target.value })}
+                className={inputClass}
+              >
+                <option value="morning">Morning</option>
+                <option value="evening">Evening</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={labelClass}>Yield (Liters)</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={formData.yield_liters}
+                onChange={(e) => setFormData({ ...formData, yield_liters: e.target.value })}
+                required
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-emerald-950/50 transition"
             >
-              <option value="">-- Choose Tag Number --</option>
-              {animals.map((a) => (
-                <option key={a.id} value={a.id}>
-                  Tag: {a.tag_number} ({a.type} {a.status === 'pregnant_milking' ? '- Pregnant' : ''})
-                </option>
-              ))}
-            </select>
+              Save Log
+            </button>
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Date</label>
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-              className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Session</label>
-            <select
-              value={formData.session}
-              onChange={(e) => setFormData({ ...formData, session: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-            >
-              <option value="morning">Morning</option>
-              <option value="evening">Evening</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Yield (Liters)</label>
-            <input
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={formData.yield_liters}
-              onChange={(e) => setFormData({ ...formData, yield_liters: e.target.value })}
-              required
-              className="w-full bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-            />
-          </div>
-        </div>
-
-        <div className="pt-2">
-          <button
-            type="submit"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-emerald-950/50 transition"
-          >
-            Save Log
-          </button>
-        </div>
-      </form>
+        </form>
+      )}
 
       {/* Logs Table */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">

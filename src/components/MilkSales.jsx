@@ -2,26 +2,30 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
+const todayLocal = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().split('T')[0];
+};
+
+const emptyForm = () => ({
+  customer_id: '',
+  date: todayLocal(),
+  quantity_liters: '',
+  total_amount: '',
+  payment_status: 'pending',
+});
+
 export default function MilkSales() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, canView } = useAuth();
   const [sales, setSales] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Form State for Admins
-  const [formData, setFormData] = useState({
-    customer_id: '',
-    date: new Date().toISOString().split('T')[0],
-    quantity_liters: '',
-    total_amount: '',
-    payment_status: 'pending'
-  });
+  const [formData, setFormData] = useState(emptyForm);
 
   useEffect(() => {
     fetchSales();
-    if (isAdmin) {
-      fetchCustomers();
-    }
+    if (isAdmin) fetchCustomers();
   }, [isAdmin]);
 
   const fetchSales = async () => {
@@ -48,10 +52,11 @@ export default function MilkSales() {
   const handleCustomerChange = (e) => {
     const customerId = e.target.value;
     const selectedCustomer = customers.find((c) => c.id === customerId);
-    
-    // Auto-calculate total amount if quantity and customer rate exist
     const rate = selectedCustomer?.rate_per_liter || 0;
-    const total = formData.quantity_liters ? (parseFloat(formData.quantity_liters) * rate).toFixed(2) : '';
+    const total =
+      formData.quantity_liters && rate
+        ? (parseFloat(formData.quantity_liters) * rate).toFixed(2)
+        : '';
 
     setFormData({ ...formData, customer_id: customerId, total_amount: total });
   };
@@ -75,20 +80,14 @@ export default function MilkSales() {
         date: formData.date,
         quantity_liters: parseFloat(formData.quantity_liters),
         total_amount: parseFloat(formData.total_amount),
-        payment_status: formData.payment_status
-      }
+        payment_status: formData.payment_status,
+      },
     ]);
 
     if (error) {
       alert('Error adding sale: ' + error.message);
     } else {
-      setFormData({
-        customer_id: '',
-        date: new Date().toISOString().split('T')[0],
-        quantity_liters: '',
-        total_amount: '',
-        payment_status: 'pending'
-      });
+      setFormData(emptyForm());
       fetchSales();
     }
   };
@@ -204,11 +203,15 @@ export default function MilkSales() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="p-4 text-center text-gray-500">Loading sales records...</td>
+                <td colSpan={isAdmin ? 6 : 5} className="p-4 text-center text-gray-500">
+                  Loading sales records...
+                </td>
               </tr>
             ) : sales.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-4 text-center text-gray-500">No sales records found.</td>
+                <td colSpan={isAdmin ? 6 : 5} className="p-4 text-center text-gray-500">
+                  No sales records found.
+                </td>
               </tr>
             ) : (
               sales.map((sale) => (
@@ -225,7 +228,7 @@ export default function MilkSales() {
                           : 'bg-yellow-100 text-yellow-700'
                       }`}
                     >
-                      {sale.payment_status.toUpperCase()}
+                      {(sale.payment_status || 'pending').toUpperCase()}
                     </span>
                   </td>
                   {isAdmin && (

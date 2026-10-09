@@ -13,79 +13,49 @@ export const AuthProvider = ({ children }) => {
       setProfile(null);
       return;
     }
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', sessionUser.id)
+      .maybeSingle();
 
-    try {
-      let { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', sessionUser.id)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: sessionUser.id,
-              email: sessionUser.email,
-              full_name: sessionUser.user_metadata?.full_name || '',
-              role: 'customer'
-            }
-          ])
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        data = newProfile;
-      } else if (error) {
-        throw error;
-      }
-
-      setProfile(data);
-    } catch (error) {
-      console.error('Error handling profile:', error.message);
+    if (error) {
+      console.error('Error loading profile:', error.message);
+      setProfile(null);
+      return;
     }
+    setProfile(data);
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (currentUser) fetchProfile(currentUser);
-      setLoading(false);
-    });
+      if (event === 'TOKEN_REFRESHED') return;
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
+      // Deferred to avoid a Supabase deadlock when calling the API inside this callback
+      setTimeout(async () => {
         await fetchProfile(currentUser);
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
+        setLoading(false);
+      }, 0);
     });
 
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  const signUp = (email, password, fullName) => {
-    return supabase.auth.signUp({
+  const signUp = (email, password, fullName) =>
+    supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } }
+      options: { data: { full_name: fullName } },
     });
-  };
 
-  const signIn = (email, password) => {
-    return supabase.auth.signInWithPassword({ email, password });
-  };
+  const signIn = (email, password) =>
+    supabase.auth.signInWithPassword({ email, password });
 
-  const signOut = () => {
+  const signOut = async () => {
+    await supabase.auth.signOut();
     setProfile(null);
-    return supabase.auth.signOut();
   };
 
   const value = {
@@ -93,20 +63,16 @@ export const AuthProvider = ({ children }) => {
     profile,
     role: profile?.role || 'customer',
     isAdmin: profile?.role === 'admin',
+    isViewer: profile?.role === 'viewer',
+    canView: profile?.role === 'admin' || profile?.role === 'viewer',
     loading,
     signUp,
     signIn,
     signOut,
-    refreshProfile: () => fetchProfile(user)
+    refreshProfile: () => fetchProfile(user),
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);
