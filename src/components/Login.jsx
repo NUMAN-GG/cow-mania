@@ -18,18 +18,23 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        const { data,error } = await signUp(email, password, fullName);
+        const { data, error } = await signUp(email, password, fullName);
         if (error) throw error;
         if (!data.session) {
-        alert('Account created. Check your email to confirm, then sign in.,');
-      setIsSignUp(false);
-      } 
-      else {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
+          alert('Account created. Check your email to confirm, then sign in.');
+          setIsSignUp(false);
+          return;
+        }
+
+        const signInResult = await signIn(email, password);
+        if (signInResult.error) throw signInResult.error;
+        return;
       }
-    } catch (err) {
-      setErrorMsg(err.message);
+
+      const { error } = await signIn(email, password);
+      if (error) throw error;
+    } catch (error) {
+      setErrorMsg(error.message);
     } finally {
       setLoading(false);
     }
