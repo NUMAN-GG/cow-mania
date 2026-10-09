@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import MilkSales from './components/MilkSales';
@@ -14,6 +14,23 @@ export default function App() {
     setActiveTab('sales');
     await signOut();
   };
+  useEffect(() => {
+  if (!user || !profile) return;
+  const portal = sessionStorage.getItem('cm_portal');
+  if (!portal) return;
+  sessionStorage.removeItem('cm_portal');
+
+  const expectedRole = { customer: 'customer', owner: 'viewer', admin: 'admin' }[portal];
+  const roleLabel = { customer: 'Customer Login', viewer: 'Owner Login', admin: 'Admin Login' };
+
+  if (expectedRole && profile.role !== expectedRole) {
+    sessionStorage.setItem(
+      'cm_portal_error',
+      `This account belongs to ${roleLabel[profile.role] || 'another login'}. Please sign in using that option.`
+    );
+    signOut();
+  }
+}, [user, profile]);
 
   if (loading) {
     return (
