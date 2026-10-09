@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Temporary test credentials (aap baad me apni Supabase details daal sakte hain)
-const supabaseUrl = 'https://reomnldwvlkorfklalhu.supabase.co'
-const supabaseAnonKey = 'sb_publishable_o9a11rF7b6t7RK0Rvwd07g_aLXFiL88'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)

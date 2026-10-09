@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
-
+const todayLocal - () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().split('T')[0];
+}
 export default function Lactation() {
   const { isAdmin } = useAuth();
   const [logs, setLogs] = useState([]);
@@ -10,7 +14,7 @@ export default function Lactation() {
 
   const [formData, setFormData] = useState({
     animal_id: '',
-    date: new Date().toISOString().split('T')[0],
+    date: todayLocal(),
     session: 'morning',
     yield_liters: ''
   });
@@ -64,7 +68,7 @@ export default function Lactation() {
     } else {
       setFormData({
         animal_id: '',
-        date: new Date().toISOString().split('T')[0],
+        date: todayLocal(),
         session: 'morning',
         yield_liters: ''
       });
@@ -83,7 +87,7 @@ export default function Lactation() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-8000 flex items-center gap-2">
           <span>🥛</span> Lactation Logs
         </h2>
       </div>

@@ -18,10 +18,13 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, fullName);
+        const { data,error } = await signUp(email, password, fullName);
         if (error) throw error;
-        alert('Account created successfully!');
-      } else {
+        if (!data.session) {
+        alert('Account created. Check your email to confirm, then sign in.,');
+      setIsSignUp(false);
+      } 
+      else {
         const { error } = await signIn(email, password);
         if (error) throw error;
       }
@@ -74,6 +77,7 @@ export default function Login() {
             <label className="block text-sm font-medium text-gray-700">Password</label>
             <input
               type="password"
+              minLength={6}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}

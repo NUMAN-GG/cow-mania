@@ -35,8 +35,14 @@ export default function Animals() {
   const handleAddAnimal = async (e) => {
     e.preventDefault();
     if (!formData.tag_number) return;
-
-    const { error } = await supabase.from('animals').insert([formData]);
+    const { error } = await supabase.from('animals').insert([
+      {
+        ...formData,
+        breed: formData.breed || null,
+        date_of_birth: formData.date_of_birth || null,
+      },
+    ]);
+    
 
     if (error) {
       alert('Error adding animal: ' + error.message);

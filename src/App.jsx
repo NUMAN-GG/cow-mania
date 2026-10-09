@@ -9,6 +9,10 @@ import Customers from './components/Customers';
 export default function App() {
   const { user, profile, isAdmin, signOut, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('sales');
+  const handleSignout = async () => {
+    setActiveTab('sales'); // Reset to default tab on sign out
+    await signOut();
+  };
 
   if (loading) {
     return (
@@ -30,11 +34,11 @@ export default function App() {
         <div>
           <h1 className="text-xl font-bold">Cow Mania</h1>
           <p className="text-xs text-slate-300">
-            Logged in as: <span className="font-semibold">{profile?.full_name || user.email}</span> ({profile?.role})
+            Logged in as: <span className="font-semibold">{profile?.full_name || user.email}</span> {profile?.role && `(${profile.role})`}
           </p>
         </div>
         <button
-          onClick={signOut}
+          onClick={handleSignout}
           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium transition"
         >
           Sign Out
